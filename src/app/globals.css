@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Forest & Stone design system ─────────────────────── */
+:root {
+  /* Core palette */
+  --bg:             #F4F6F0;
+  --surface:        #FFFFFF;
+  --surface2:       #EBF0E4;
+  --surface3:       #DDE6D4;
+  --accent:         #2E7D52;
+  --accent-l:       #4CAF78;
+  --accent-d:       #1B5C38;
+  --accent-bg:      rgba(46,125,82,.08);
+  --accent-bdr:     rgba(46,125,82,.25);
+  --ink:            #141F17;
+  --ink2:           #2A3D2F;
+  --ink3:           #6B7D6E;
+  --ink4:           #B0BEB3;
+  --bdr:            rgba(20,31,23,.09);
+  --bdr2:           rgba(20,31,23,.15);
+  --danger:         #C0392B;
+  --danger-bg:      rgba(192,57,43,.07);
+  --danger-bdr:     rgba(192,57,43,.2);
+  --ok:             #27AE60;
+  --ok-bg:          rgba(39,174,96,.07);
+  --ok-bdr:         rgba(39,174,96,.2);
+  --sh-sm:          0 1px 3px rgba(20,31,23,.05), 0 4px 16px rgba(20,31,23,.07);
+  --sh-md:          0 4px 20px rgba(20,31,23,.10), 0 1px 4px rgba(20,31,23,.06);
+  --sh-lg:          0 12px 40px rgba(20,31,23,.13), 0 2px 8px rgba(20,31,23,.07);
+  --nav-bg:         rgba(244,246,240,.93);
+  --hero-grad:      linear-gradient(160deg, #F4F6F0 0%, #DFF0E6 100%);
+  --bg-inverse:     #141F17;
+  --bg-inverse-2:   #1B2E1F;
+
+  /* Legacy aliases — keep existing components working */
+  --color-bg:             var(--bg);
+  --color-surface:        var(--surface);
+  --color-surface-muted:  var(--surface2);
+  --color-border:         var(--bdr2);
+  --color-text:           var(--ink);
+  --color-text-secondary: var(--ink3);
+  --color-accent:         var(--accent);
+  --color-accent-bg:      var(--accent-bg);
+  --color-found:          var(--ok);
+  --color-found-bg:       var(--ok-bg);
+  --color-destructive:    var(--danger);
+  --shadow-sm:            var(--sh-sm);
+  --shadow-md:            var(--sh-md);
+
+  /* Radius tokens */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --ease-spring:     cubic-bezier(.22,1,.36,1);
+  --ease-out-expo:   cubic-bezier(.22,1,.36,1);
+}
+
+/* ── Dark mode ─────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:          #0D1610;
+  --surface:     #142018;
+  --surface2:    #1A2B1E;
+  --surface3:    #1F3323;
+  --accent:      #3DA569;
+  --accent-l:    #5AC882;
+  --accent-d:    #2E7D52;
+  --accent-bg:   rgba(61,165,105,.12);
+  --accent-bdr:  rgba(61,165,105,.30);
+  --ink:         #E4EDE6;
+  --ink2:        #CCDDD0;
+  --ink3:        #7A9B82;
+  --ink4:        #3D5E45;
+  --bdr:         rgba(228,237,230,.07);
+  --bdr2:        rgba(228,237,230,.13);
+  --danger:      #E05A4A;
+  --danger-bg:   rgba(224,90,74,.10);
+  --danger-bdr:  rgba(224,90,74,.25);
+  --ok:          #3DA569;
+  --ok-bg:       rgba(61,165,105,.10);
+  --ok-bdr:      rgba(61,165,105,.25);
+  --sh-sm:       0 1px 3px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.25);
+  --sh-md:       0 4px 20px rgba(0,0,0,.35), 0 1px 4px rgba(0,0,0,.20);
+  --sh-lg:       0 12px 40px rgba(0,0,0,.50), 0 2px 8px rgba(0,0,0,.25);
+  --nav-bg:      rgba(13,22,16,.95);
+  --hero-grad:   linear-gradient(160deg, #0D1610 0%, #142A1A 100%);
+  --bg-inverse:  #080E0B;
+  --bg-inverse-2: #0D1610;
+}
+
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* ── Global interaction styles ─────────────────────────── */
+a { text-decoration: none; color: inherit; }
+
+/* Listing card — CSS hover so no client-side JS needed */
+.lcard {
+  transition: transform 300ms cubic-bezier(.22,1,.36,1), box-shadow 300ms cubic-bezier(.22,1,.36,1);
+}
+.lcard:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--sh-lg);
+}
+.lcard-img img {
+  transition: transform .5s cubic-bezier(.22,1,.36,1);
+}
+.lcard:hover .lcard-img img {
+  transform: scale(1.07);
+}
+
+/* Shimmer sweep utility */
+@keyframes shimmer-sweep {
+  from { left: -100%; }
+  to   { left: 200%; }
+}
+
+/* Pulse green */
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 0 rgba(39,174,96,.5); }
+  50%      { box-shadow: 0 0 0 5px rgba(39,174,96,0); }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .font-serif   { font-family: 'Playfair Display', Georgia, serif; }
+  .font-mono-dm { font-family: 'DM Mono', 'Courier New', monospace; }
+}
