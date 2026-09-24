@@ -157,7 +157,7 @@ export default function FeedPage() {
   const [sort,     setSort]     = useState<Sort>("newest");
 
   useEffect(() => {
-    fetch("/api/local/data")
+    fetch("/api/feed")
       .then(r => r.json())
       .then(d => {
         setAllListings(

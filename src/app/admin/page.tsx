@@ -1,13 +1,25 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+function isAdminEmail(email: string | undefined): boolean {
+  if (!email) return false;
+  const admins = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return admins.includes(email.toLowerCase());
+}
 import { TopBar } from "@/components/layout/TopBar";
 
 export default async function AdminPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+  if (!isAdminEmail(user.email)) notFound();
 
-  const { data: reports } = await supabase
+  // Reports have no public read policy — admins read them with the service role.
+  const { data: reports } = await createAdminClient()
     .from("reports")
     .select("*, profiles:reporter_id(full_name), listing:listing_id(title)")
     .eq("status", "pending")

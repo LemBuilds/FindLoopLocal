@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { signUp } from "@/actions/auth";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CONSENT_VERSION } from "@/lib/gdpr";
@@ -14,6 +14,7 @@ export function SignupForm() {
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkEmail, setCheckEmail] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,15 +23,16 @@ export function SignupForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
+      const res = await signUp({ email, password, fullName, consent });
 
-      if (authError) {
-        setError(authError.message);
+      if ("error" in res) {
+        setError(res.error);
+        setLoading(false);
+        return;
+      }
+
+      if (res.needsConfirmation) {
+        setCheckEmail(true);
         setLoading(false);
         return;
       }
@@ -40,6 +42,18 @@ export function SignupForm() {
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
+  }
+
+  if (checkEmail) {
+    return (
+      <div className="text-center py-8" role="status">
+        <p className="text-4xl mb-3">📧</p>
+        <h2 className="font-bold text-lg mb-2" style={{ color: "var(--color-text)" }}>Check your email</h2>
+        <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+          We sent a confirmation link to {email}. Click it to activate your account.
+        </p>
+      </div>
+    );
   }
 
   return (

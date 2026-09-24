@@ -399,7 +399,7 @@ function FaqSection() {
             Frequently asked questions
           </div>
           <div style={{ fontSize: 15, color: "var(--ink3)", marginBottom: 36 }}>
-            Can't find the answer? <Link href="/auth/signup" style={{ color: "var(--accent)", fontWeight: 600 }}>Chat with us →</Link>
+            Can&apos;t find the answer? <Link href="/auth/signup" style={{ color: "var(--accent)", fontWeight: 600 }}>Chat with us →</Link>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -460,7 +460,7 @@ export default function HomePage() {
   const [userProfile, setUserProfile] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
-    fetch("/api/local/data")
+    fetch("/api/feed")
       .then(r => r.json())
       .then(d => {
         const all = (d.listings ?? []) as (Listing & { view_count?: number })[];

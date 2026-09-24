@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/Textarea";
 
 interface ClaimReviewProps {
   claim: Claim;
-  storageBase: string;
+  proofPhotoUrl: string | null;
 }
 
 function timeLeft(expiresAt: string): string {
@@ -20,7 +20,7 @@ function timeLeft(expiresAt: string): string {
   return `${h}h ${m}m remaining`;
 }
 
-export function ClaimReview({ claim, storageBase }: ClaimReviewProps) {
+export function ClaimReview({ claim, proofPhotoUrl }: ClaimReviewProps) {
   const [loading, setLoading] = useState(false);
   const [finderNote, setFinderNote] = useState("");
   const [showNoteField, setShowNoteField] = useState(false);
@@ -77,12 +77,13 @@ export function ClaimReview({ claim, storageBase }: ClaimReviewProps) {
       </div>
 
       {/* Proof photo */}
-      {claim.proof_photo_path && (
+      {proofPhotoUrl && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--color-text-secondary)" }}>Proof photo</p>
           <div className="relative w-full h-40 rounded-[var(--radius-sm)] overflow-hidden">
             <Image
-              src={`${storageBase}/${claim.proof_photo_path}`}
+              src={proofPhotoUrl}
+              unoptimized
               alt="Proof photo"
               fill
               className="object-contain"

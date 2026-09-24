@@ -9,7 +9,8 @@ import type { Match } from "@/types";
 
 export const metadata = { title: "Matches — FindLoop" };
 
-async function getMatches(userId: string): Promise<Match[]> {
+// RLS only returns matches that involve the signed-in user's listings.
+async function getMatches(): Promise<Match[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("matches")
@@ -19,7 +20,6 @@ async function getMatches(userId: string): Promise<Match[]> {
       found_listing:found_listing_id(id,title,category,location_label,user_id)
     `)
     .eq("status", "pending")
-    .or(`lost_listing.user_id.eq.${userId},found_listing.user_id.eq.${userId}`)
     .order("score", { ascending: false })
     .limit(20);
   return (data ?? []) as unknown as Match[];
@@ -30,7 +30,7 @@ export default async function MatchesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const matches = await getMatches(user.id);
+  const matches = await getMatches();
 
   return (
     <PageShell title="Matches">

@@ -1,25 +1,30 @@
 import { NextResponse } from "next/server";
-import { getStore, persistStore } from "@/lib/local-store";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function POST(request: Request) {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET ?? "local-cron-secret";
-  if (auth !== `Bearer ${secret}`) {
+export const dynamic = "force-dynamic";
+
+// Vercel Cron calls this with `Authorization: Bearer $CRON_SECRET` (GET).
+async function expireClaims(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const store = getStore();
-  const now = new Date().toISOString();
-  let expiredCount = 0;
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("claims")
+    .update({ status: "expired" })
+    .eq("status", "pending")
+    .lt("expires_at", new Date().toISOString())
+    .select("id");
 
-  for (const claim of Object.values(store.claims)) {
-    if (claim.status === "pending" && String(claim.expires_at ?? "") < now) {
-      claim.status = "expired";
-      expiredCount++;
-    }
+  if (error) {
+    console.error("claims/expire failed", error);
+    return NextResponse.json({ error: "Failed to expire claims" }, { status: 500 });
   }
 
-  if (expiredCount > 0) persistStore();
-
-  return NextResponse.json({ expired: expiredCount });
+  return NextResponse.json({ expired: data?.length ?? 0 });
 }
+
+export const GET = expireClaims;
+export const POST = expireClaims;

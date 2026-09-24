@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CLAIM_PROOFS_BUCKET } from "@/lib/storage";
 import { claimExpiry } from "@/lib/gdpr";
 import { revalidatePath } from "next/cache";
 
@@ -21,14 +23,17 @@ export async function submitClaim(input: {
   const listing = listingRow as { user_id: string };
   if (listing.user_id === user.id) return { error: "You cannot claim your own listing" };
 
-  const { count: totalAttempts } = await supabase
+  // Queue limits must see every claimant's claims, which RLS hides from this user.
+  const admin = createAdminClient();
+
+  const { count: totalAttempts } = await admin
     .from("claims")
     .select("id", { count: "exact", head: true })
     .eq("listing_id", input.listing_id)
     .eq("claimant_id", user.id);
   if ((totalAttempts ?? 0) >= 3) return { error: "Maximum claim attempts reached for this listing" };
 
-  const { count: activeClaims } = await supabase
+  const { count: activeClaims } = await admin
     .from("claims")
     .select("id", { count: "exact", head: true })
     .eq("listing_id", input.listing_id)
@@ -36,7 +41,7 @@ export async function submitClaim(input: {
     .in("status", ["pending"]);
   if ((activeClaims ?? 0) >= 1) return { error: "You already have an active claim on this listing" };
 
-  const { count: totalActive } = await supabase
+  const { count: totalActive } = await admin
     .from("claims")
     .select("id", { count: "exact", head: true })
     .eq("listing_id", input.listing_id)
@@ -47,20 +52,21 @@ export async function submitClaim(input: {
   if (input.proof_photo) {
     const [, base64] = input.proof_photo.dataUrl.split(",");
     const bytes = Buffer.from(base64, "base64");
-    const storagePath = `claims/${input.listing_id}/${user.id}-${input.proof_photo.name}`;
+    const storagePath = `${input.listing_id}/${user.id}/${Date.now()}-${input.proof_photo.name}`;
     const { error: uploadError } = await supabase.storage
-      .from("listing-photos")
-      .upload(storagePath, bytes, { contentType: "image/jpeg", upsert: true });
-    if (!uploadError) proofPhotoPath = storagePath;
+      .from(CLAIM_PROOFS_BUCKET)
+      .upload(storagePath, bytes, { contentType: "image/jpeg", upsert: false });
+    if (uploadError) return { error: "Failed to upload proof photo. Please try again." };
+    proofPhotoPath = storagePath;
   }
 
-  const { data: maxPosRow } = await supabase
+  const { data: maxPosRow } = await admin
     .from("claims")
     .select("queue_position")
     .eq("listing_id", input.listing_id)
     .order("queue_position", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   const nextPos = ((maxPosRow as { queue_position?: number } | null)?.queue_position ?? 0) + 1;
 

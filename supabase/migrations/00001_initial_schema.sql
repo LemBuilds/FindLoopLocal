@@ -93,10 +93,9 @@ create table claims (
   queue_position integer not null default 1,
   expires_at timestamptz not null,
   created_at timestamptz default now(),
-  responded_at timestamptz,
-  constraint cannot_claim_own check (
-    claimant_id != (select user_id from listings where id = listing_id)
-  )
+  responded_at timestamptz
+  -- "cannot claim own listing" is enforced by a trigger in 00003
+  -- (Postgres does not allow subqueries in CHECK constraints).
 );
 
 create index claims_listing_idx on claims(listing_id, status);

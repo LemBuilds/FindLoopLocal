@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TopBar } from "@/components/layout/TopBar";
 import { VerifyForm } from "@/components/profile/VerifyForm";
-import type { Profile } from "@/types";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 export const metadata = { title: "Verify account — FindLoop" };
 
@@ -15,10 +15,12 @@ export default async function VerifyPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: profileData } = await supabase.from("profiles").select("phone,is_phone_verified").eq("id", user.id).single();
-  const profile = profileData as Pick<Profile, "phone" | "is_phone_verified"> | null;
+  const [{ data: profile }, { data: privateProfile }] = await Promise.all([
+    supabase.from("profiles").select("is_phone_verified").eq("id", user.id).single(),
+    supabase.from("profile_private").select("phone").eq("id", user.id).maybeSingle(),
+  ]);
 
-  const nextPath = searchParams.next ?? "/profile/me";
+  const nextPath = safeRedirectPath(searchParams.next, "/profile/me");
   const isChangingPhone = profile?.is_phone_verified === true && !searchParams.next;
 
   return (
@@ -34,7 +36,7 @@ export default async function VerifyPage({ searchParams }: Props) {
             : "Add your phone number to post listings and claim found items."}
         </p>
         <VerifyForm
-          currentPhone={profile?.phone ?? null}
+          currentPhone={privateProfile?.phone ?? null}
           nextPath={nextPath}
           isChangingPhone={isChangingPhone}
         />

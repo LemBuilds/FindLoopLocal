@@ -21,7 +21,6 @@ export interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   city: string | null;
-  phone: string | null;
   is_phone_verified: boolean;
   verification_status: VerificationStatus;
   reputation_score: number;
@@ -33,7 +32,8 @@ export interface Profile {
 
 export interface Listing {
   id: string;
-  user_id: string;
+  /** null for seeded demo listings and listings whose owner deleted their account */
+  user_id: string | null;
   type: ListingType;
   title: string;
   category: ListingCategory;
@@ -51,6 +51,7 @@ export interface Listing {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  view_count?: number;
   profiles?: Pick<Profile, "full_name" | "avatar_url" | "reputation_score">;
   listing_photos?: ListingPhoto[];
 }

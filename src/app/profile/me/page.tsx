@@ -14,8 +14,9 @@ export default async function MyProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const [{ data: profile }, { data: listings }] = await Promise.all([
+  const [{ data: profile }, { data: privateProfile }, { data: listings }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("profile_private").select("phone").eq("id", user.id).maybeSingle(),
     supabase
       .from("listings")
       .select("*, listing_photos(id,storage_path,display_order)")
@@ -47,8 +48,8 @@ export default async function MyProfilePage() {
             )}
           </div>
           <p className="text-sm truncate" style={{ color: "var(--color-text-secondary)" }}>{user.email}</p>
-          {p?.phone && (
-            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>{p.phone}</p>
+          {privateProfile?.phone && (
+            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>{privateProfile.phone}</p>
           )}
           <p className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>⭐ {p?.reputation_score ?? 0} reputation</p>
         </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_LINKS = [
   { href: "/feed",       label: "Browse"  },
@@ -17,16 +18,16 @@ export function NavBar() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/local/auth/user")
-      .then(r => r.json())
-      .then(d => setUserId(d?.user?.id ?? null))
-      .catch(() => {});
+    createClient().auth.getUser()
+      .then(({ data }) => setUserId(data.user?.id ?? null))
+      .catch(() => setUserId(null));
   }, [pathname]); // re-check on navigation
 
   async function handleSignOut() {
-    await fetch("/api/local/auth/logout", { method: "POST" });
+    await createClient().auth.signOut();
     setUserId(null);
     router.push("/");
+    router.refresh();
   }
 
   return (

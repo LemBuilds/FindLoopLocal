@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { NavBar } from "@/components/layout/NavBar";
 import type { Listing, ListingPhoto } from "@/types";
+import { createClient } from "@/lib/supabase/client";
+import { listingPhotoUrl } from "@/lib/storage";
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -142,7 +144,7 @@ export default function ListingPage() {
   const [submitted, setSubmitted]     = useState(false);
 
   function loadReviews() {
-    fetch(`/api/local/reviews?listing_id=${id}`)
+    fetch(`/api/reviews?listing_id=${encodeURIComponent(id)}`)
       .then(r => r.json())
       .then(d => setReviews(d.reviews ?? []))
       .catch(() => {});
@@ -150,21 +152,17 @@ export default function ListingPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/local/listings/${id}`).then(r => {
+      fetch(`/api/listings/${id}`).then(r => {
         if (!r.ok) { setNotFound(true); return null; }
         return r.json();
       }),
-      fetch("/api/local/auth/user").then(r => r.json()),
+      createClient().auth.getUser().then(({ data }) => data),
     ]).then(([data, auth]) => {
       if (data) {
         setListing(data.listing as Listing);
         setPhotos(data.photos as ListingPhoto[]);
         setViewCount(data.viewCount as number);
-        fetch("/api/local/views", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ listing_id: id }),
-        }).catch(() => {});
+        fetch(`/api/listings/${id}/view`, { method: "POST" }).catch(() => {});
       }
       setUserId(auth?.user?.id ?? null);
     }).catch(() => {}).finally(() => setLoading(false));
@@ -175,7 +173,7 @@ export default function ListingPage() {
   async function handleMarkReturned() {
     if (!listing) return;
     setMarking(true);
-    const res = await fetch(`/api/local/listings/${id}`, {
+    const res = await fetch(`/api/listings/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "recovered" }),
@@ -193,7 +191,7 @@ export default function ListingPage() {
     if (!comment.trim()) { setSubmitError("Please write a short review."); return; }
     setSubmitting(true);
     setSubmitError("");
-    const res = await fetch("/api/local/reviews", {
+    const res = await fetch("/api/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ listing_id: id, rating, comment }),
@@ -215,8 +213,8 @@ export default function ListingPage() {
   const isRecovered  = listing?.status === "recovered";
   const hasReviewed  = !!userId && reviews.some(r => r.reviewer_id === userId);
   const canReview    = isRecovered && !!userId && !hasReviewed;
-  const photoSrc     = photos.length > 0 ? `/uploads/${photos[0].storage_path}` : null;
-  const isDemo       = listing?.user_id === "demo-system";
+  const photoSrc     = photos.length > 0 ? listingPhotoUrl(photos[0].storage_path) : null;
+  const isDemo       = !!listing && !listing.user_id;
   const typeColor    = listing?.type === "lost" ? "var(--danger)" : "var(--ok)";
   const typeBg       = listing?.type === "lost" ? "var(--danger-bg)" : "var(--ok-bg)";
   const typeBdr      = listing?.type === "lost" ? "var(--danger-bdr)" : "var(--ok-bdr)";
@@ -441,7 +439,7 @@ export default function ListingPage() {
                 {/* Already reviewed */}
                 {hasReviewed && !submitted && (
                   <div style={{ padding: "12px 16px", borderRadius: 12, background: "var(--surface2)", border: "1px solid var(--bdr)", marginBottom: reviews.length > 0 ? 20 : 0 }}>
-                    <p style={{ fontSize: 13, color: "var(--ink3)", margin: 0 }}>You've already reviewed this listing.</p>
+                    <p style={{ fontSize: 13, color: "var(--ink3)", margin: 0 }}>You&apos;ve already reviewed this listing.</p>
                   </div>
                 )}
 

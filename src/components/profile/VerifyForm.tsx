@@ -20,7 +20,7 @@ export function VerifyForm({ currentPhone, nextPath, isChangingPhone }: VerifyFo
     setError(null);
     setLoading(true);
     try {
-      const r = await fetch("/api/local/profile/verify", {
+      const r = await fetch("/api/profile/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
@@ -40,7 +40,7 @@ export function VerifyForm({ currentPhone, nextPath, isChangingPhone }: VerifyFo
         className="px-4 py-3 rounded-[var(--radius-sm)] text-sm"
         style={{ background: "var(--color-found-bg)", color: "var(--color-found)" }}
       >
-        In local dev mode, verification is instant — no SMS is sent.
+        Your number is kept private and never shown on your listings.
       </div>
 
       {error && (

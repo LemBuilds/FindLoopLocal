@@ -4,17 +4,21 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/feed";
+  const redirect = safeRedirectPath(searchParams.get("redirect"), "/feed");
+  const linkExpired = searchParams.get("error") === "link_expired";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    linkExpired ? "That link has expired or was already used. Please sign in or request a new one." : null
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

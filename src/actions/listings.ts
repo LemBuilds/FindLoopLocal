@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { LISTING_PHOTOS_BUCKET } from "@/lib/storage";
 import { scoreMatch, MATCH_THRESHOLD } from "@/lib/match";
 import type { ListingCategory, ListingType } from "@/types";
 import { revalidatePath } from "next/cache";
@@ -64,10 +66,12 @@ export async function createListing(input: CreateListingInput): Promise<{ id: st
     const storagePath = `${user.id}/${listing.id}/${i}-${photo.name}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("listing-photos")
+      .from(LISTING_PHOTOS_BUCKET)
       .upload(storagePath, bytes, { contentType: "image/jpeg", upsert: false });
 
-    if (!uploadError) {
+    if (uploadError) {
+      console.error("createListing: photo upload failed", uploadError.message);
+    } else {
       await supabase.from("listing_photos").insert({
         listing_id: listing.id,
         storage_path: storagePath,
@@ -84,7 +88,8 @@ export async function createListing(input: CreateListingInput): Promise<{ id: st
 }
 
 async function runMatchingForListing(listingId: string, type: ListingType) {
-  const supabase = createClient();
+  // Service role: matches have no client insert policy.
+  const supabase = createAdminClient();
 
   const { data: newListingRow } = await supabase
     .from("listings")
@@ -131,7 +136,10 @@ async function runMatchingForListing(listingId: string, type: ListingType) {
   }
 
   if (inserts.length > 0) {
-    await supabase.from("matches").insert(inserts);
+    const { error } = await supabase
+      .from("matches")
+      .upsert(inserts, { onConflict: "lost_listing_id,found_listing_id", ignoreDuplicates: true });
+    if (error) console.error("runMatchingForListing: insert failed", error);
   }
 }
 

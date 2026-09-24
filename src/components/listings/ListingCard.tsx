@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { Listing } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { formatReward } from "@/lib/currency";
+import { listingPhotoUrl } from "@/lib/storage";
 
 interface ListingCardProps {
   listing: Listing;
@@ -51,7 +52,7 @@ export function ListingCard({ listing, matchScore, viewCount }: ListingCardProps
       <div className="lcard-img" style={{ height: 175, overflow: "hidden", position: "relative", background: "var(--surface2)" }}>
         {photo ? (
           <Image
-            src={`/uploads/${photo.storage_path}`}
+            src={listingPhotoUrl(photo.storage_path)}
             alt={listing.title}
             fill
             className="object-cover"

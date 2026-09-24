@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageShell } from "@/components/layout/PageShell";
 import { ClaimReview } from "@/components/claims/ClaimReview";
+import { CLAIM_PROOFS_BUCKET } from "@/lib/storage";
 import type { Claim } from "@/types";
+
+const PROOF_URL_TTL_SECONDS = 60 * 60;
 
 export const metadata = { title: "Claims — FindLoop" };
 
@@ -12,15 +15,13 @@ export default async function ClaimsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const storageBase = "/uploads";
-
   // Claims on finder's listings (finder reviewing)
   const { data: incomingClaims } = await supabase
     .from("claims")
     .select(`
       *,
       profiles:claimant_id(full_name, avatar_url, created_at),
-      listing:listing_id(title, category, user_id)
+      listing:listings!inner(title, category, user_id)
     `)
     .eq("listing.user_id", user.id)
     .eq("status", "pending")
@@ -38,6 +39,18 @@ export default async function ClaimsPage() {
   const claims = (incomingClaims ?? []) as Claim[];
   const userClaims = (myClaims ?? []) as Claim[];
 
+  // Proof photos live in a private bucket — hand the finder short-lived signed URLs.
+  const proofPaths = claims.map((c) => c.proof_photo_path).filter((p): p is string => !!p);
+  const proofUrls = new Map<string, string>();
+  if (proofPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(CLAIM_PROOFS_BUCKET)
+      .createSignedUrls(proofPaths, PROOF_URL_TTL_SECONDS);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) proofUrls.set(s.path, s.signedUrl);
+    }
+  }
+
   return (
     <PageShell title="Claims">
       {claims.length > 0 && (
@@ -51,7 +64,10 @@ export default async function ClaimsPage() {
                 <p className="text-xs mb-2 font-medium" style={{ color: "var(--color-text-secondary)" }}>
                   For: <Link href={`/listings/${claim.listing_id}`} className="underline">{claim.listing?.title}</Link>
                 </p>
-                <ClaimReview claim={claim} storageBase={storageBase} />
+                <ClaimReview
+                  claim={claim}
+                  proofPhotoUrl={claim.proof_photo_path ? proofUrls.get(claim.proof_photo_path) ?? null : null}
+                />
               </div>
             ))}
           </div>
